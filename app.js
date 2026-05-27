@@ -1,25 +1,33 @@
+// Import core modular Firebase features directly via web CDN browser modules
 import { initializeApp } from "https://gstatic.com";
 import { getDatabase, ref, push, query, limitToLast, onChildAdded } from "https://gstatic.com";
 
-// ⚠️ PASTE YOUR EXACT FIREBASE CONFIGURATION HERE
+// ✅ YOUR OFFICIAL MATCHONE PRODUCTION APP CONFIGURATION
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    databaseURL: "YOUR_DATABASE_URL",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyArBrlVv9IEBHwWwkiZ-Xs0N0h1qR_nDZM",
+  authDomain: "matchone-d3217.firebaseapp.com",
+  projectId: "matchone-d3217",
+  storageBucket: "matchone-d3217.firebasestorage.app",
+  messagingSenderId: "291767431734",
+  appId: "1:291767431734:web:1ae4cc354f051f538a5e97",
+  measurementId: "G-6BQYC5RQP8"
 };
 
+// Initialize Firebase Core Engine
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
+// Target the explicit "messages" tree inside your database rules setup
 const messagesRef = ref(db, "messages");
+
+// Structural snapshot optimization layer: pulling strictly the last 50 entries
 const recentMessagesQuery = query(messagesRef, limitToLast(50));
 
+// Core runtime memory parameters
 let username = "";
-const badWords = ["badword1", "badword2", "stupid", "jerk"];
+const badWords = ["badword1", "badword2", "stupid", "jerk"]; // Expand list as needed
 
+// Dynamic sanitization script tracking toxic phrasing
 function cleanText(text) {
     let filteredText = text;
     badWords.forEach(word => {
@@ -29,11 +37,13 @@ function cleanText(text) {
     return filteredText;
 }
 
+// Convert Unix snapshots into readable localized timestamps (HH:MM)
 function formatTime(timestamp) {
     if (!timestamp) return "";
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Global script block execution isolated until document painting resolves
 document.addEventListener("DOMContentLoaded", () => {
     const loginContainer = document.getElementById("login-container");
     const chatContainer = document.getElementById("chat-container");
@@ -54,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Handle authentication wrapper onboarding event
     joinBtn.addEventListener("click", () => {
         username = cleanText(usernameInput.value.trim());
         if (!username) {
@@ -64,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
         chatContainer.classList.remove("hidden");
     });
 
+    // Compile variables and push structured JSON properties upstream
     function sendMessage() {
         const rawText = messageInput.value.trim();
         if (rawText && username) {
@@ -79,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sendBtn.addEventListener("click", sendMessage);
     messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 
+    // Live WebSockets listener intercepting incoming realtime updates
     onChildAdded(recentMessagesQuery, (snapshot) => {
         const data = snapshot.val();
         const timeString = formatTime(data.timestamp);
@@ -97,6 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         
         messagesContainer.appendChild(wrapper);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Anchor UI scroll tracking to bottom
     });
 });
