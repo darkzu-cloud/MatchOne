@@ -36,7 +36,7 @@ body {
     height: 100vh;
     color: var(--text-main);
     overflow: hidden;
-    transition: background 0.3s ease;
+    transition: background 0.25s ease;
 }
 
 #theme-toggle {
@@ -69,7 +69,6 @@ body {
     max-width: 420px;
     display: flex;
     flex-direction: column;
-    transition: background 0.3s, border-color 0.3s;
 }
 
 .hidden { display: none !important; }
@@ -88,19 +87,8 @@ body {
     margin: 0 auto 16px auto;
 }
 
-h2 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 4px;
-}
-
-.subtitle {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    text-align: center;
-    margin-bottom: 24px;
-}
+h2 { font-size: 1.4rem; font-weight: 700; text-align: center; margin-bottom: 4px; }
+.subtitle { font-size: 0.9rem; color: var(--text-muted); text-align: center; margin-bottom: 24px; }
 
 input {
     width: 100%;
@@ -137,5 +125,5 @@ input {
 #input-container { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border-color); }
 #input-container button { width: 48px; height: 48px; background: var(--primary); color: white; border: none; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; }
 
-.animate-fade { animation: fadeIn 0.3s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
