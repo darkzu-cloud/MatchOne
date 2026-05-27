@@ -5,7 +5,7 @@ import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot } f
 // ✅ YOUR OFFICIAL MATCHONE PRODUCTION APP CONFIGURATION
 const firebaseConfig = {
   apiKey: "AIzaSyArBrlVv9IEBHwWwkiZ-Xs0N0h1qR_nDZM",
-  authDomain: "matchone-d3217.firebaseapp.com",
+  authDomain: "://firebaseapp.com",
   projectId: "matchone-d3217",
   storageBucket: "matchone-d3217.firebasestorage.app",
   messagingSenderId: "291767431734",
@@ -13,17 +13,21 @@ const firebaseConfig = {
   measurementId: "G-6BQYC5RQP8"
 };
 
-// Initialize Firebase Core & Firestore Database Engine
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let db = null;
+let messagesCollection = null;
+let recentMessagesQuery = null;
 
-// Point to a collection called "messages"
-const messagesCollection = collection(db, "messages");
+// Attempt database connection without freezing the entire script architecture
+try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    messagesCollection = collection(db, "messages");
+    recentMessagesQuery = query(messagesCollection, orderBy("timestamp", "asc"), limit(50));
+} catch (error) {
+    console.error("Firebase Initialization Failure:", error);
+}
 
-// Structural Query: Order messages by time sent, limit stream history to the latest 50
-const recentMessagesQuery = query(messagesCollection, orderBy("timestamp", "asc"), limit(50));
-
-// Runtime parameters
+// Runtime workspace memory setup
 let username = "";
 const badWords = ["badword1", "badword2", "stupid", "jerk"];
 
@@ -41,6 +45,7 @@ function formatTime(timestamp) {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Enforce UI execution loop matching document layout painting
 document.addEventListener("DOMContentLoaded", () => {
     const loginContainer = document.getElementById("login-container");
     const chatContainer = document.getElementById("chat-container");
@@ -51,29 +56,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const messagesContainer = document.getElementById("messages-container");
     const themeToggle = document.getElementById("theme-toggle");
 
-    // Dark/Light view toggle handler
-    themeToggle.addEventListener("click", () => {
-        const currentTheme = document.documentElement.getAttribute("data-theme");
-        if (currentTheme === "dark") {
-            document.documentElement.removeAttribute("data-theme");
-        } else {
-            document.documentElement.setAttribute("data-theme", "dark");
-        }
-    });
+    // 🌗 DARK MODE LOGIC (Isolated to prevent database locks from freezing it)
+    if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+            const currentTheme = document.documentElement.getAttribute("data-theme");
+            if (currentTheme === "dark") {
+                document.documentElement.removeAttribute("data-theme");
+            } else {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        });
+    }
 
-    // Username lobby event
-    joinBtn.addEventListener("click", () => {
-        username = cleanText(usernameInput.value.trim());
-        if (!username) {
-            alert("Please input a screen name to access MatchOne!");
-            return;
-        }
-        loginContainer.classList.add("hidden");
-        chatContainer.classList.remove("hidden");
-    });
+    // LOBBY ENTRY SYSTEM LOGIC
+    if (joinBtn && usernameInput) {
+        joinBtn.addEventListener("click", () => {
+            username = cleanText(usernameInput.value.trim());
+            if (!username) {
+                alert("Please input a screen name to access MatchOne!");
+                return;
+            }
+            loginContainer.classList.add("hidden");
+            chatContainer.classList.remove("hidden");
+        });
+    }
 
-    // Push new document structures to Firestore collection
+    // MESSAGE TRANSMISSION LOGIC
     async function sendMessage() {
+        if (!messagesCollection) return;
         const rawText = messageInput.value.trim();
         if (rawText && username) {
             try {
@@ -84,39 +94,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 messageInput.value = "";
             } catch (error) {
-                console.error("Error writing message to Firestore: ", error);
+                console.error("Error writing message to Firestore:", error);
             }
         }
     }
 
-    sendBtn.addEventListener("click", sendMessage);
-    messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
-
-    // Live continuous WebSockets snapshot listener intercepting live data changes
-    onSnapshot(recentMessagesQuery, (snapshot) => {
-        // Clear message board before refreshing list to prevent duplicates
-        messagesContainer.innerHTML = "";
-
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const timeString = formatTime(data.timestamp);
-
-            const wrapper = document.createElement("div");
-            wrapper.classList.add("msg-wrapper", "animate-fade");
-            
-            wrapper.innerHTML = `
-                <div class="msg-meta">
-                    <span class="msg-sender">${data.name}</span>
-                    <span class="msg-time">${timeString}</span>
-                </div>
-                <div class="msg-bubble">
-                    <div class="msg-text">${data.message}</div>
-                </div>
-            `;
-            
-            messagesContainer.appendChild(wrapper);
+    if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+    if (messageInput) {
+        messageInput.addEventListener("keypress", (e) => { 
+            if (e.key === "Enter") sendMessage(); 
         });
-        
-        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Keep view pinned to bottom
-    });
+    }
+
+    // DATA STREAM RENDERER LOGIC
+    if (recentMessagesQuery) {
+        onSnapshot(recentMessagesQuery, (snapshot) => {
+            messagesContainer.innerHTML = ""; // Clear existing blocks to prevent duplicating views
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const timeString = formatTime(data.timestamp);
+
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("msg-wrapper", "animate-fade");
+                
+                wrapper.innerHTML = `
+                    <div class="msg-meta">
+                        <span class="msg-sender">${data.name}</span>
+                        <span class="msg-time">${timeString}</span>
+                    </div>
+                    <div class="msg-bubble">
+                        <div class="msg-text">${data.message}</div>
+                    </div>
+                `;
+                
+                messagesContainer.appendChild(wrapper);
+            });
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Autoscroll pinned
+        }, (error) => {
+            console.error("Firestore Streaming Interrupt Error:", error);
+        });
+    }
 });
