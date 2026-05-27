@@ -1,4 +1,4 @@
-// ✅ INITIALIZE APP KEYS WITH ASSIGNED PRODUCTION SPECIFICATIONS
+// ✅ MATCHONE OFFICIAL REGISTERED CORE CONFIGURATION BLOCK
 const firebaseConfig = {
   apiKey: "AIzaSyArBrlVv9IEBHwWwkiZ-Xs0N0h1qR_nDZM",
   authDomain: "://firebaseapp.com",
@@ -9,9 +9,19 @@ const firebaseConfig = {
   measurementId: "G-6BQYC5RQP8"
 };
 
-// Start Global Instance Structures
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+let db = null;
+
+// Initialize Database inside a safety block to protect UI events from crashing
+try {
+    if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+    } else {
+        console.warn("Firebase SDK libraries failed to map on network load. Interface running in Offline Mode.");
+    }
+} catch (error) {
+    console.error("Database connection failure:", error);
+}
 
 let username = "";
 const badWords = ["badword1", "badword2", "stupid", "jerk"];
@@ -30,7 +40,7 @@ function formatTime(timestamp) {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Bind operations directly to window loading layout thread
+// Complete application interface rendering loop
 document.addEventListener("DOMContentLoaded", () => {
     const loginContainer = document.getElementById("login-container");
     const chatContainer = document.getElementById("chat-container");
@@ -41,29 +51,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const messagesContainer = document.getElementById("messages-container");
     const themeToggle = document.getElementById("theme-toggle");
 
-    // 🌗 Fast Theme Switcher Logic
-    themeToggle.addEventListener("click", () => {
-        const currentTheme = document.documentElement.getAttribute("data-theme");
-        if (currentTheme === "dark") {
-            document.documentElement.removeAttribute("data-theme");
-        } else {
-            document.documentElement.setAttribute("data-theme", "dark");
-        }
-    });
+    // 🌗 THEME TOGGLE (Isolated from Database Layer - Works Instantly)
+    if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+            const currentTheme = document.documentElement.getAttribute("data-theme");
+            if (currentTheme === "dark") {
+                document.documentElement.removeAttribute("data-theme");
+            } else {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        });
+    }
 
-    // Lobby Interface Control Logic
-    joinBtn.addEventListener("click", () => {
-        username = cleanText(usernameInput.value.trim());
-        if (!username) {
-            alert("Please input a screen name to access MatchOne!");
+    // LOBBY TRANSITION INTERFACE BUTTON (Isolated - Works Instantly)
+    if (joinBtn) {
+        joinBtn.addEventListener("click", () => {
+            username = cleanText(usernameInput.value.trim());
+            if (!username) {
+                alert("Please input a screen name to access MatchOne!");
+                return;
+            }
+            loginContainer.classList.add("hidden");
+            chatContainer.classList.remove("hidden");
+        });
+    }
+
+    // CLOUD TRANSACTION DATA WRITER
+    async function sendMessage() {
+        if (!db) {
+            alert("Database offline. Check your internet connection.");
             return;
         }
-        loginContainer.classList.add("hidden");
-        chatContainer.classList.remove("hidden");
-    });
-
-    // Upstream Transaction Writer Logic
-    async function sendMessage() {
         const rawText = messageInput.value.trim();
         if (rawText && username) {
             try {
@@ -74,41 +92,47 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 messageInput.value = "";
             } catch (error) {
-                console.error("Firestore Write Block Alert: ", error);
+                console.error("Firestore database push block error: ", error);
             }
         }
     }
 
-    sendBtn.addEventListener("click", sendMessage);
-    messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+    if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+    if (messageInput) {
+        messageInput.addEventListener("keypress", (e) => { 
+            if (e.key === "Enter") sendMessage(); 
+        });
+    }
 
-    // Live Streaming Core Engine Query Broker
-    db.collection("messages")
-      .orderBy("timestamp", "asc")
-      .limitToLast(50)
-      .onSnapshot((snapshot) => {
-          messagesContainer.innerHTML = ""; // Wipe container map template to repaint stream safely
+    // LIVE STREAM LAYOUT SYNCHRONIZER
+    if (db) {
+        db.collection("messages")
+          .orderBy("timestamp", "asc")
+          .limitToLast(50)
+          .onSnapshot((snapshot) => {
+              messagesContainer.innerHTML = ""; // Clear list structure
 
-          snapshot.forEach((doc) => {
-              const data = doc.data();
-              const timeString = formatTime(data.timestamp);
+              snapshot.forEach((doc) => {
+                  const data = doc.data();
+                  const timeString = formatTime(data.timestamp);
 
-              const wrapper = document.createElement("div");
-              wrapper.classList.add("msg-wrapper", "animate-fade");
-              
-              wrapper.innerHTML = `
-                  <div class="msg-meta">
-                      <span class="msg-sender">${data.name}</span>
-                      <span class="msg-time">${timeString}</span>
-                  </div>
-                  <div class="msg-bubble">
-                      <div class="msg-text">${data.message}</div>
-                  </div>
-              `;
-              messagesContainer.appendChild(wrapper);
+                  const wrapper = document.createElement("div");
+                  wrapper.classList.add("msg-wrapper", "animate-fade");
+                  
+                  wrapper.innerHTML = `
+                      <div class="msg-meta">
+                          <span class="msg-sender">${data.name}</span>
+                          <span class="msg-time">${timeString}</span>
+                      </div>
+                      <div class="msg-bubble">
+                          <div class="msg-text">${data.message}</div>
+                      </div>
+                  `;
+                  messagesContainer.appendChild(wrapper);
+              });
+              messagesContainer.scrollTop = messagesContainer.scrollHeight; // Focus lock bottom snap
+          }, (error) => {
+              console.error("Snapshot data synchronization error: ", error);
           });
-          messagesContainer.scrollTop = messagesContainer.scrollHeight; // Fast tracking scrolling snap
-      }, (error) => {
-          console.error("Realtime Synchronization Interrupted: ", error);
-      });
+    }
 });
