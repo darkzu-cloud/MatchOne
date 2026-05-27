@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchOne - Public Realtime Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Theme Toggle Switch -->
+    <button id="theme-toggle" aria-label="Toggle Theme">🌓</button>
+
+    <!-- Username Screen -->
+    <div id="login-container" class="card animate-fade">
+        <div class="logo-badge">M1</div>
+        <h2>Welcome to MatchOne</h2>
+        <p class="subtitle">Enter a nickname to enter the global text lounge</p>
+        <input type="text" id="username-input" placeholder="What's your name?" maxlength="20" autocomplete="off">
+        <button id="join-btn">Start Chatting</button>
+    </div>
+
+    <!-- Chat Room Screen -->
+    <div id="chat-container" class="card hidden animate-fade">
+        <div id="chat-header">
+            <div class="header-left">
+                <span class="status-dot"></span>
+                <span class="room-title">MatchOne Global</span>
+            </div>
+        </div>
+        <div id="messages-container"></div>
+        <div id="input-container">
+            <input type="text" id="message-input" placeholder="Type a message..." maxlength="200" autocomplete="off">
+            <button id="send-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>
