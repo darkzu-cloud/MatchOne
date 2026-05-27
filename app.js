@@ -1,4 +1,4 @@
-// ✅ MATCHONE ASSIGNED CONFIGURATION KEYS
+// ✅ MATCHONE ASSIGNED FIREBASE CREDENTIAL CONFIGURATION
 const firebaseConfig = {
   apiKey: "AIzaSyArBrlVv9IEBHwWwkiZ-Xs0N0h1qR_nDZM",
   authDomain: "://firebaseapp.com",
@@ -9,18 +9,28 @@ const firebaseConfig = {
   measurementId: "G-6BQYC5RQP8"
 };
 
-// Global Native Init
+// Start Cloud Initialization Engine
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let username = "";
+const badWords = ["badword1", "badword2", "stupid", "jerk"];
+
+function cleanText(text) {
+    let filteredText = text;
+    badWords.forEach(word => {
+        const regex = new RegExp(`\\b${word}\\b`, "gi");
+        filteredText = filteredText.replace(regex, "****");
+    });
+    return filteredText;
+}
 
 function formatTime(timestamp) {
     if (!timestamp) return "";
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Runtime operations execution
+// Attach UI Event Handlers
 document.addEventListener("DOMContentLoaded", () => {
     const loginContainer = document.getElementById("login-container");
     const chatContainer = document.getElementById("chat-container");
@@ -31,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const messagesContainer = document.getElementById("messages-container");
     const themeToggle = document.getElementById("theme-toggle");
 
-    // 🌗 Dark Mode Logic
+    // 🌗 Theme Toggler Component
     themeToggle.addEventListener("click", () => {
         const currentTheme = document.documentElement.getAttribute("data-theme");
         if (currentTheme === "dark") {
@@ -41,9 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Lobby Entry Logic (Guaranteed to click and unlock the chat room)
+    // 🚪 Core Screen Login Transition (Guaranteed Unfreezable)
     joinBtn.addEventListener("click", () => {
-        username = usernameInput.value.trim();
+        username = cleanText(usernameInput.value.trim());
         if (!username) {
             alert("Please input a screen name to access MatchOne!");
             return;
@@ -52,20 +62,20 @@ document.addEventListener("DOMContentLoaded", () => {
         chatContainer.classList.remove("hidden");
     });
 
-    // Write Message Logic Directly to Cloud
+    // ✉️ Send Data Stream Outbound
     async function sendMessage() {
         const rawText = messageInput.value.trim();
         if (rawText && username) {
             try {
                 await db.collection("messages").add({
                     name: username,
-                    message: rawText,
+                    message: cleanText(rawText),
                     timestamp: Date.now()
                 });
                 messageInput.value = "";
             } catch (error) {
-                console.error("Firestore Upload Error: ", error);
-                alert("Database connection blocked. Turn off ad-blockers!");
+                console.error("Firestore Write Blocked:", error);
+                alert("Database link interrupted. Please disable browser adblock extensions.");
             }
         }
     }
@@ -73,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sendBtn.addEventListener("click", sendMessage);
     messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 
-    // SAFE FIREBASE LISTENER (No index required, completely unfreezable)
+    // 🌐 REAL-TIME SIMULTANEOUS CHAT ROOM STREAM (No indices required, unfreezable)
     db.collection("messages")
       .limitToLast(50)
       .onSnapshot((snapshot) => {
@@ -84,10 +94,10 @@ document.addEventListener("DOMContentLoaded", () => {
               messagesArray.push(data);
           });
 
-          // Sort messages locally in JavaScript so Firestore doesn't reject the query
+          // Sort messages inside JavaScript array so database engine never crashes
           messagesArray.sort((a, b) => a.timestamp - b.timestamp);
 
-          messagesContainer.innerHTML = ""; // Clear pool
+          messagesContainer.innerHTML = ""; // Refresh clean pane setup
 
           messagesArray.forEach((data) => {
               const timeString = formatTime(data.timestamp);
@@ -105,8 +115,8 @@ document.addEventListener("DOMContentLoaded", () => {
               `;
               messagesContainer.appendChild(wrapper);
           });
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          messagesContainer.scrollTop = messagesContainer.scrollHeight; // Focus lock scrolling tracking down
       }, (error) => {
-          console.error("Database streaming error: ", error);
+          console.error("Database streaming failed:", error);
       });
 });
