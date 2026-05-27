@@ -1,7 +1,6 @@
-// ✅ RECOGNIZED FIREBASE ACCOUNT DEFINITIONS
 const firebaseConfig = {
   apiKey: "AIzaSyArBrlVv9IEBHwWwkiZ-Xs0N0h1qR_nDZM",
-  authDomain: "matchone-d3217.firebaseapp.com",
+  authDomain: "://firebaseapp.com",
   projectId: "matchone-d3217",
   storageBucket: "matchone-d3217.firebasestorage.app",
   messagingSenderId: "291767431734",
@@ -12,21 +11,19 @@ const firebaseConfig = {
 let db = null;
 let username = "";
 
-// 🚀 CRITICAL FIX: Wrap Firebase engine setup inside a Try/Catch block.
-// This prevents Firebase initialization issues from breaking your layout buttons.
+// Database Handshake Wrapper
 try {
     if (typeof firebase !== 'undefined') {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
-        console.log("Firebase Engine Handshake Successful.");
+        console.log("Firebase Engine Online");
     } else {
-        console.error("External Firebase scripts were blocked by the browser network layer.");
+        console.warn("Using offline fallback engine configurations.");
     }
 } catch (e) {
-    console.error("Firebase Configuration Interruption:", e);
+    console.error("Initialization Failed:", e);
 }
 
-// Global Document Layout Execution Thread
 document.addEventListener("DOMContentLoaded", () => {
     const loginContainer = document.getElementById("login-container");
     const chatContainer = document.getElementById("chat-container");
@@ -37,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const messagesContainer = document.getElementById("messages-container");
     const themeToggle = document.getElementById("theme-toggle");
 
-    // 🌗 DECOUPLED THEME TOGGLE: Works instantly, independent of database status.
+    // 🌗 Theme switcher logic executes instantly
     if (themeToggle) {
         themeToggle.addEventListener("click", () => {
             const currentTheme = document.documentElement.getAttribute("data-theme");
@@ -49,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 🚪 DECOUPLED LOGIN NAVIGATION: Works instantly, independent of database status.
+    // 🚪 Lobby login step executes instantly
     if (joinBtn && usernameInput) {
         joinBtn.addEventListener("click", () => {
             username = usernameInput.value.trim();
@@ -62,24 +59,26 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // TRANSMIT MESSAGE FLOW
+    // Outbound Message Sender
     async function sendMessage() {
+        const text = messageInput.value.trim();
+        if (!text || !username) return;
+
         if (!db) {
-            alert("Database Connection Error. Running app locally in Offline mode.");
+            alert("App running in test mode. Database links could not be loaded.");
             return;
         }
-        const text = messageInput.value.trim();
-        if (text && username) {
-            try {
-                await db.collection("messages").add({
-                    name: username,
-                    message: text,
-                    timestamp: Date.now()
-                });
-                messageInput.value = "";
-            } catch (err) {
-                console.error("Firestore Write Blocked:", err);
-            }
+
+        try {
+            await db.collection("messages").add({
+                name: username,
+                message: text,
+                timestamp: Date.now()
+            });
+            messageInput.value = "";
+        } catch (err) {
+            console.error("Firestore Write Failed:", err);
+            alert("Message failed to sync. Check your cloud firestore console rules.");
         }
     }
 
@@ -88,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
     }
 
-    // FIREBASE CONTENT RENDERING ENGINE
+    // Inbound Message Listener Stream
     if (db) {
         db.collection("messages")
           .orderBy("timestamp", "asc")
@@ -112,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
               });
               messagesContainer.scrollTop = messagesContainer.scrollHeight;
           }, (error) => {
-              console.error("Firestore Stream Closed:", error);
+              console.error("Streaming Stream Interrupted:", error);
           });
     }
 });
