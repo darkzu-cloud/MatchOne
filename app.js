@@ -1,6 +1,6 @@
-// Import core modular Firebase features directly via web CDN browser modules
+// Import Firestore modules directly from the official web CDN
 import { initializeApp } from "https://gstatic.com";
-import { getDatabase, ref, push, query, limitToLast, onChildAdded } from "https://gstatic.com";
+import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot } from "https://gstatic.com";
 
 // ✅ YOUR OFFICIAL MATCHONE PRODUCTION APP CONFIGURATION
 const firebaseConfig = {
@@ -13,21 +13,20 @@ const firebaseConfig = {
   measurementId: "G-6BQYC5RQP8"
 };
 
-// Initialize Firebase Core Engine
+// Initialize Firebase Core & Firestore Database Engine
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const db = getFirestore(app);
 
-// Target the explicit "messages" tree inside your database rules setup
-const messagesRef = ref(db, "messages");
+// Point to a collection called "messages"
+const messagesCollection = collection(db, "messages");
 
-// Structural snapshot optimization layer: pulling strictly the last 50 entries
-const recentMessagesQuery = query(messagesRef, limitToLast(50));
+// Structural Query: Order messages by time sent, limit stream history to the latest 50
+const recentMessagesQuery = query(messagesCollection, orderBy("timestamp", "asc"), limit(50));
 
-// Core runtime memory parameters
+// Runtime parameters
 let username = "";
-const badWords = ["badword1", "badword2", "stupid", "jerk"]; // Expand list as needed
+const badWords = ["badword1", "badword2", "stupid", "jerk"];
 
-// Dynamic sanitization script tracking toxic phrasing
 function cleanText(text) {
     let filteredText = text;
     badWords.forEach(word => {
@@ -37,13 +36,11 @@ function cleanText(text) {
     return filteredText;
 }
 
-// Convert Unix snapshots into readable localized timestamps (HH:MM)
 function formatTime(timestamp) {
     if (!timestamp) return "";
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Global script block execution isolated until document painting resolves
 document.addEventListener("DOMContentLoaded", () => {
     const loginContainer = document.getElementById("login-container");
     const chatContainer = document.getElementById("chat-container");
@@ -54,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const messagesContainer = document.getElementById("messages-container");
     const themeToggle = document.getElementById("theme-toggle");
 
-    // 🌗 Dark Mode System Toggle Execution
+    // Dark/Light view toggle handler
     themeToggle.addEventListener("click", () => {
         const currentTheme = document.documentElement.getAttribute("data-theme");
         if (currentTheme === "dark") {
@@ -64,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Handle authentication wrapper onboarding event
+    // Username lobby event
     joinBtn.addEventListener("click", () => {
         username = cleanText(usernameInput.value.trim());
         if (!username) {
@@ -75,41 +72,51 @@ document.addEventListener("DOMContentLoaded", () => {
         chatContainer.classList.remove("hidden");
     });
 
-    // Compile variables and push structured JSON properties upstream
-    function sendMessage() {
+    // Push new document structures to Firestore collection
+    async function sendMessage() {
         const rawText = messageInput.value.trim();
         if (rawText && username) {
-            push(messagesRef, {
-                name: username,
-                message: cleanText(rawText),
-                timestamp: Date.now()
-            });
-            messageInput.value = "";
+            try {
+                await addDoc(messagesCollection, {
+                    name: username,
+                    message: cleanText(rawText),
+                    timestamp: Date.now()
+                });
+                messageInput.value = "";
+            } catch (error) {
+                console.error("Error writing message to Firestore: ", error);
+            }
         }
     }
 
     sendBtn.addEventListener("click", sendMessage);
     messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 
-    // Live WebSockets listener intercepting incoming realtime updates
-    onChildAdded(recentMessagesQuery, (snapshot) => {
-        const data = snapshot.val();
-        const timeString = formatTime(data.timestamp);
+    // Live continuous WebSockets snapshot listener intercepting live data changes
+    onSnapshot(recentMessagesQuery, (snapshot) => {
+        // Clear message board before refreshing list to prevent duplicates
+        messagesContainer.innerHTML = "";
 
-        const wrapper = document.createElement("div");
-        wrapper.classList.add("msg-wrapper", "animate-fade");
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const timeString = formatTime(data.timestamp);
+
+            const wrapper = document.createElement("div");
+            wrapper.classList.add("msg-wrapper", "animate-fade");
+            
+            wrapper.innerHTML = `
+                <div class="msg-meta">
+                    <span class="msg-sender">${data.name}</span>
+                    <span class="msg-time">${timeString}</span>
+                </div>
+                <div class="msg-bubble">
+                    <div class="msg-text">${data.message}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(wrapper);
+        });
         
-        wrapper.innerHTML = `
-            <div class="msg-meta">
-                <span class="msg-sender">${data.name}</span>
-                <span class="msg-time">${timeString}</span>
-            </div>
-            <div class="msg-bubble">
-                <div class="msg-text">${data.message}</div>
-            </div>
-        `;
-        
-        messagesContainer.appendChild(wrapper);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Anchor UI scroll tracking to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Keep view pinned to bottom
     });
 });
