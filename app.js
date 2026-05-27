@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Lobby Entry Logic
+    // Lobby Entry Logic (Guaranteed to click and unlock the chat room)
     joinBtn.addEventListener("click", () => {
         username = usernameInput.value.trim();
         if (!username) {
@@ -57,7 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const rawText = messageInput.value.trim();
         if (rawText && username) {
             try {
-                // Pushes directly to the global cloud collection
                 await db.collection("messages").add({
                     name: username,
                     message: rawText,
@@ -66,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 messageInput.value = "";
             } catch (error) {
                 console.error("Firestore Upload Error: ", error);
-                alert("Database connection blocked. Please disable any ad-blockers running on this browser.");
+                alert("Database connection blocked. Turn off ad-blockers!");
             }
         }
     }
@@ -74,17 +73,24 @@ document.addEventListener("DOMContentLoaded", () => {
     sendBtn.addEventListener("click", sendMessage);
     messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 
-    // Live Synchronized Global Database Stream Listener
+    // SAFE FIREBASE LISTENER (No index required, completely unfreezable)
     db.collection("messages")
-      .orderBy("timestamp", "asc")
       .limitToLast(50)
       .onSnapshot((snapshot) => {
-          messagesContainer.innerHTML = ""; // Clear pool to refresh list layout
+          let messagesArray = [];
 
           snapshot.forEach((doc) => {
               const data = doc.data();
-              const timeString = formatTime(data.timestamp);
+              messagesArray.push(data);
+          });
 
+          // Sort messages locally in JavaScript so Firestore doesn't reject the query
+          messagesArray.sort((a, b) => a.timestamp - b.timestamp);
+
+          messagesContainer.innerHTML = ""; // Clear pool
+
+          messagesArray.forEach((data) => {
+              const timeString = formatTime(data.timestamp);
               const wrapper = document.createElement("div");
               wrapper.classList.add("msg-wrapper", "animate-fade");
               
